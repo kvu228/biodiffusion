@@ -286,3 +286,13 @@ src/signal/__pycache__/*
 src/runs/
 src/runs/*
 
+
+.codex/
+gha-creds-*.json
+.idea
+datasets/*
+.github
+wandb
+runs
+
+/AGENTS.md

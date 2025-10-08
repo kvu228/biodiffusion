@@ -1,17 +1,16 @@
 # Import necessary libraries
-import os
-import torch
-import torch.nn as nn
-from matplotlib import pyplot as plt
-from tqdm import tqdm
-from types import SimpleNamespace
-from torch import optim
-from utils import *
-from modules.modules import UNet
-import wandb
 import argparse
 import logging
+from types import SimpleNamespace
+
+import torch
+import torch.nn as nn
+from torch import optim
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
+
+from modules.modules import UNet
+from utils import *
 
 # Set up logging
 logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO, datefmt="%I:%M:%S")
@@ -29,7 +28,7 @@ config = SimpleNamespace(
     train_folder="train",
     val_folder="test",
     num_workers=10,
-    device="cuda:2",
+    device="cuda" if torch.cuda.is_available() else "cpu",
     lr=3e-4,
     noise_steps=1000
 )
@@ -130,7 +129,10 @@ class Diffusion:
 def train(args):
     device = args.device
     train_dataloader, val_dataloader = get_data(args)
-    model = UNet().to(device)
+    model = UNet(
+        c_in=3,
+        c_out=3,
+    ).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=args.lr)
     mse = nn.MSELoss()
     diffusion = Diffusion(img_size=args.img_size, device=device)

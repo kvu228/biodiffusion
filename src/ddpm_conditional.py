@@ -16,6 +16,8 @@ from modules.modules import UNet_conditional, EMA
 
 torch.cuda.empty_cache()
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 # Define configuration using SimpleNamespace
 config = SimpleNamespace(    
     run_name="DDPM_conditional",
@@ -28,7 +30,7 @@ config = SimpleNamespace(
     dataset_path=get_cifar(img_size=32),
     train_folder="train",
     val_folder="test",
-    device="cuda:3",
+    device=device,
     slice_size=1,
     do_validation=True,
     fp16=True,
@@ -41,7 +43,7 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 # Define the Diffusion class
 class Diffusion:
-    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size=256, num_classes=10, c_in=3, c_out=3, device="cuda:3", **kwargs):
+    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size=256, num_classes=10, c_in=3, c_out=3, device=device, **kwargs):
         """
         Initializes the Diffusion class.
 
@@ -248,7 +250,7 @@ class Diffusion:
                                                  steps_per_epoch=len(self.train_dataloader), epochs=args.epochs)
         self.mse = nn.MSELoss()
         self.ema = EMA(0.995)
-        self.scaler = torch.cuda.amp.GradScaler()
+        self.scaler = torch.amp.GradScaler(device=device)
 
     def fit(self, args):
         """
