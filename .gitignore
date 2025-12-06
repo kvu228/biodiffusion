@@ -1,0 +1,50 @@
+# Directories for AI agents and IDEs
+.claude
+.codex
+.github
+.vscode
+.idea
+.cursor
+
+
+# cache files
+*/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pywz
+*.pyzw
+*.pyzwz
+*.pyzwzw
+*.pyzwzwz
+*.pyzwzwzw
+
+# jupyter notebook checkpoints
+**/*.ipynb_checkpoints/
+
+# models and checkpoints
+models/
+
+#logs
+runs/
+logs/
+
+# datasets
+*.csv
+*.json
+*.pkl
+*.pt
+*.pth
+*.pt
+*.pth
+*.pt
+*.pth
+*.pt
+*.pth
+*.zip
+
+doc/*
+
+.env
