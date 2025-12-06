@@ -91,48 +91,211 @@ def setup_logging(run_name):
     
     
 def save_signals(signals, path, **kwargs):
-    signals = signals.to('cpu').detach().numpy()
-    dim = signals.shape[1]
-    fig, axs = plt.subplots(2, 5, figsize=(20,5))
-    for i in range(2):
-        for j in range(5):
-            for k in range(dim):
-                axs[i, j].plot(signals[i*5+j][k][:])
-    plt.savefig(path, format="jpeg")
+    """
+    Save signals visualization. Supports both 1-channel (MITBIH) and 3-channel (UNIMIB) signals.
     
+    Args:
+        signals: Tensor of shape (n_samples, channels, seq_length)
+        path: Path to save the image
+    """
+    signals = signals.to('cpu').detach().numpy()
+    n_samples = min(signals.shape[0], 10)  # Show max 10 samples
+    n_channels = signals.shape[1]
+    
+    if n_channels == 1:
+        # Single channel (MITBIH) - original behavior
+        fig, axs = plt.subplots(2, 5, figsize=(20, 5))
+        for i in range(2):
+            for j in range(5):
+                idx = i * 5 + j
+                if idx < n_samples:
+                    axs[i, j].plot(signals[idx][0][:])
+                    axs[i, j].set_title(f'Sample {idx}')
+                axs[i, j].grid(True, alpha=0.3)
+    elif n_channels == 3:
+        # Three channels (UNIMIB) - show ax, ay, az separately
+        fig, axs = plt.subplots(2, 5, figsize=(20, 6))
+        channel_names = ['ax', 'ay', 'az']
+        colors = ['r', 'g', 'b']
+        for i in range(2):
+            for j in range(5):
+                idx = i * 5 + j
+                if idx < n_samples:
+                    for ch in range(3):
+                        axs[i, j].plot(signals[idx][ch][:], 
+                                      color=colors[ch], 
+                                      label=channel_names[ch], 
+                                      alpha=0.7)
+                    axs[i, j].set_title(f'Sample {idx}')
+                    axs[i, j].legend(loc='upper right', fontsize=6)
+                axs[i, j].grid(True, alpha=0.3)
+    else:
+        # Generic multi-channel support
+        fig, axs = plt.subplots(2, 5, figsize=(20, 5))
+        for i in range(2):
+            for j in range(5):
+                idx = i * 5 + j
+                if idx < n_samples:
+                    for ch in range(n_channels):
+                        axs[i, j].plot(signals[idx][ch][:], alpha=0.7, label=f'Ch{ch}')
+                    axs[i, j].set_title(f'Sample {idx}')
+                    if n_channels <= 5:
+                        axs[i, j].legend(loc='upper right', fontsize=6)
+                axs[i, j].grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.savefig(path, format="jpeg", dpi=150)
+    plt.close()
+
 
 def save_signals_cls_free(signals, labels, path, **kwargs):
+    """
+    Save signals with class labels visualization. 
+    Supports both 1-channel (MITBIH) and 3-channel (UNIMIB) signals.
+    
+    Args:
+        signals: Tensor of shape (n_samples, channels, seq_length)
+        labels: Tensor or array of class labels
+        path: Path to save the image
+    """
     signals = signals.to('cpu').detach().numpy()
-    dim = signals.shape[1]
-    fig, axs = plt.subplots(2, 5, figsize=(20,5))
-    for i in range(2):
-        for j in range(5):
-            for k in range(dim):
-                axs[i, j].plot(signals[i*5+j][k][:])
-            axs[i, j].set_title(f'{labels[i*5+j]}')
-    plt.savefig(path, format="jpeg")
+    if isinstance(labels, torch.Tensor):
+        labels = labels.to('cpu').numpy()
+    
+    n_samples = min(signals.shape[0], 10)  # Show max 10 samples
+    n_channels = signals.shape[1]
+    
+    if n_channels == 1:
+        # Single channel (MITBIH) - original behavior
+        fig, axs = plt.subplots(2, 5, figsize=(20, 5))
+        for i in range(2):
+            for j in range(5):
+                idx = i * 5 + j
+                if idx < n_samples:
+                    axs[i, j].plot(signals[idx][0][:])
+                    axs[i, j].set_title(f'Class {labels[idx]}')
+                axs[i, j].grid(True, alpha=0.3)
+    elif n_channels == 3:
+        # Three channels (UNIMIB) - show ax, ay, az separately
+        fig, axs = plt.subplots(2, 5, figsize=(20, 6))
+        channel_names = ['ax', 'ay', 'az']
+        colors = ['r', 'g', 'b']
+        for i in range(2):
+            for j in range(5):
+                idx = i * 5 + j
+                if idx < n_samples:
+                    for ch in range(3):
+                        axs[i, j].plot(signals[idx][ch][:], 
+                                      color=colors[ch], 
+                                      label=channel_names[ch], 
+                                      alpha=0.7)
+                    axs[i, j].set_title(f'Class {labels[idx]}')
+                    axs[i, j].legend(loc='upper right', fontsize=6)
+                axs[i, j].grid(True, alpha=0.3)
+    else:
+        # Generic multi-channel support
+        fig, axs = plt.subplots(2, 5, figsize=(20, 5))
+        for i in range(2):
+            for j in range(5):
+                idx = i * 5 + j
+                if idx < n_samples:
+                    for ch in range(n_channels):
+                        axs[i, j].plot(signals[idx][ch][:], alpha=0.7, label=f'Ch{ch}')
+                    axs[i, j].set_title(f'Class {labels[idx]}')
+                    if n_channels <= 5:
+                        axs[i, j].legend(loc='upper right', fontsize=6)
+                axs[i, j].grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.savefig(path, format="jpeg", dpi=150)
+    plt.close()
     
 
     
     
 def save_signals_cond_cls_free(sampled_signals, org_signals, cond_signals, labels, path, **kwargs):
+    """
+    Save conditional signals visualization (original, conditional, sampled).
+    Supports both 1-channel (MITBIH) and 3-channel (UNIMIB) signals.
+    
+    Args:
+        sampled_signals: Generated signals, shape (n_samples, channels, seq_length)
+        org_signals: Original signals, shape (n_samples, channels, seq_length)
+        cond_signals: Conditional signals, shape (n_samples, channels, seq_length)
+        labels: Class labels
+        path: Path to save the image
+    """
     sampled_signals = sampled_signals.to('cpu').detach().numpy()
     org_signals = org_signals.to('cpu').detach().numpy()
     cond_signals = cond_signals.to('cpu').detach().numpy()
-#     print(f'sampled_signals shape is {sampled_signals.shape}') # shape = (5, 1, 128)
-#     print(f'org_signals shape is {org_signals.shape}') # shape = (5, 1, 128)
-#     print(f'cond_signals shape is {cond_signals.shape}') # shape = (5, 1, 128)
+    if isinstance(labels, torch.Tensor):
+        labels = labels.to('cpu').numpy()
     
-    dim = sampled_signals.shape[1]
-            
-    fig, axs = plt.subplots(3, 5, figsize=(20,5))
-    for i in range(5):
-        for d in range(dim):
-            axs[0, i].plot(org_signals[i][d][:])
-            axs[1, i].plot(cond_signals[i][d][:])
-            axs[2, i].plot(sampled_signals[i][d][:])
-            axs[0, i].set_title(f'{labels[i]}')
-    plt.savefig(path, format="jpeg")    
+    n_samples = min(sampled_signals.shape[0], 5)  # Show max 5 samples
+    n_channels = sampled_signals.shape[1]
+    
+    if n_channels == 1:
+        # Single channel (MITBIH) - original behavior
+        fig, axs = plt.subplots(3, 5, figsize=(20, 9))
+        for i in range(5):
+            if i < n_samples:
+                axs[0, i].plot(org_signals[i][0][:], label='Original')
+                axs[1, i].plot(cond_signals[i][0][:], label='Conditional')
+                axs[2, i].plot(sampled_signals[i][0][:], label='Sampled')
+                axs[0, i].set_title(f'Class {labels[i]}')
+            for row in range(3):
+                axs[row, i].grid(True, alpha=0.3)
+                if i < n_samples:
+                    axs[row, i].legend(loc='upper right', fontsize=6)
+    elif n_channels == 3:
+        # Three channels (UNIMIB) - show ax, ay, az separately
+        fig, axs = plt.subplots(3, 5, figsize=(20, 9))
+        channel_names = ['ax', 'ay', 'az']
+        colors = ['r', 'g', 'b']
+        row_labels = ['Original', 'Conditional', 'Sampled']
+        
+        for i in range(5):
+            if i < n_samples:
+                for row in range(3):
+                    for ch in range(3):
+                        if row == 0:
+                            data = org_signals[i][ch][:]
+                        elif row == 1:
+                            data = cond_signals[i][ch][:]
+                        else:
+                            data = sampled_signals[i][ch][:]
+                        
+                        axs[row, i].plot(data, 
+                                        color=colors[ch], 
+                                        label=channel_names[ch], 
+                                        alpha=0.7)
+                    axs[row, i].set_title(f'{row_labels[row]} - Class {labels[i]}' if row == 0 else row_labels[row])
+                    axs[row, i].legend(loc='upper right', fontsize=6)
+            for row in range(3):
+                axs[row, i].grid(True, alpha=0.3)
+    else:
+        # Generic multi-channel support
+        fig, axs = plt.subplots(3, 5, figsize=(20, 9))
+        for i in range(5):
+            if i < n_samples:
+                for row in range(3):
+                    for ch in range(n_channels):
+                        if row == 0:
+                            data = org_signals[i][ch][:]
+                        elif row == 1:
+                            data = cond_signals[i][ch][:]
+                        else:
+                            data = sampled_signals[i][ch][:]
+                        axs[row, i].plot(data, alpha=0.7, label=f'Ch{ch}')
+                    axs[row, i].set_title(f'Class {labels[i]}' if row == 0 else '')
+                    if n_channels <= 5:
+                        axs[row, i].legend(loc='upper right', fontsize=6)
+            for row in range(3):
+                axs[row, i].grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.savefig(path, format="jpeg", dpi=150)
+    plt.close()    
     
 def save_images_1D_to_2D_cls_free(signals, labels, path, **kwargs):
     signals = signals.to('cpu').detach().numpy()
