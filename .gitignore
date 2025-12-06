@@ -33,6 +33,7 @@ runs/
 logs/
 
 # datasets
+datasets/
 *.csv
 *.json
 *.pkl
