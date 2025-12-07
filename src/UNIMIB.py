@@ -10,21 +10,16 @@ Date: 2024
 
 UNIMIB Dataset Characteristics:
 - 3 channels (x, y, z accelerometer)
-- 9 classes
+- 9 ADL classes (labels 0-8, falling classes 9-16 are filtered out)
 - Sequence length: 128
 - Train: 6,055 samples
 - Test: 1,524 samples
 """
 
-import os
-import sys
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 import torch
-from torch.utils.data import Dataset, DataLoader
-from sklearn.utils import resample
-import random
+from torch.utils.data import Dataset
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -51,6 +46,11 @@ class unimib_oneClass(Dataset):
     """
     def __init__(self, filename='./unimib_train.csv', reshape=True, class_id=0):
         data_pd = pd.read_csv(filename)
+        
+        # Filter: chỉ giữ lại ADLs (labels <= 9 trong CSV, tương đương 1-9)
+        # Loại bỏ falling classes (10-17 trong CSV) để model tập trung học ADL patterns
+        # Note: CSV labels bắt đầu từ 1, không có label 0
+        data_pd = data_pd[data_pd['label'] <= 9].copy()
         
         # Filter by class (label column, convert 1-9 to 0-8 if needed)
         # Assuming labels in CSV are 1-9, convert to 0-8
@@ -106,6 +106,11 @@ class unimib_allClass(Dataset):
     """
     def __init__(self, filename='./unimib_train.csv', isBalanced=True, n_samples=2000, oneD=True):
         data_train = pd.read_csv(filename)
+        
+        # Filter: chỉ giữ lại ADLs (labels <= 9 trong CSV, tương đương 1-9)
+        # Loại bỏ falling classes (10-17 trong CSV) để model tập trung học ADL patterns
+        # Note: CSV labels bắt đầu từ 1, không có label 0
+        data_train = data_train[data_train['label'] <= 9].copy()
         
         # Convert labels from 1-9 to 0-8 if needed
         if data_train['label'].min() > 0:
@@ -201,6 +206,11 @@ class unimib_masked(Dataset):
     def __init__(self, filename='./unimib_train.csv', reshape=True, class_id=0):
         data_pd = pd.read_csv(filename)
         
+        # Filter: chỉ giữ lại ADLs (labels <= 9 trong CSV, tương đương 1-9)
+        # Loại bỏ falling classes (10-17 trong CSV) để model tập trung học ADL patterns
+        # Note: CSV labels bắt đầu từ 1, không có label 0
+        data_pd = data_pd[data_pd['label'] <= 9].copy()
+        
         # Convert labels
         if data_pd['label'].min() > 0:
             data_pd['label'] = data_pd['label'] - 1
@@ -267,6 +277,11 @@ class unimib_denoising(Dataset):
             # Load test data
             test_path = dataroot.replace('train', 'test')
             data_pd = pd.read_csv(test_path)
+        
+        # Filter: chỉ giữ lại ADLs (labels <= 9 trong CSV, tương đương 1-9)
+        # Loại bỏ falling classes (10-17 trong CSV) để model tập trung học ADL patterns
+        # Note: CSV labels bắt đầu từ 1, không có label 0
+        data_pd = data_pd[data_pd['label'] <= 9].copy()
         
         # Convert labels
         if data_pd['label'].min() > 0:

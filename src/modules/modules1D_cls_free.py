@@ -1,20 +1,12 @@
-# copy from https://github.com/lucidrains/denoising-diffusion-pytorch/blob/main/denoising_diffusion_pytorch/classifier_free_guidance.py
-# TO DO: modify it to 1D classifier free guidance stable diffusion model 
-
 import math
-import copy
-from pathlib import Path
-from random import random
 from functools import partial
 from collections import namedtuple
-from multiprocessing import cpu_count
 
 import torch
 from torch import nn, einsum
 import torch.nn.functional as F
 
 from einops import rearrange, reduce, repeat
-from einops.layers.torch import Rearrange
 
 from tqdm.auto import tqdm
 
@@ -821,4 +813,4 @@ if __name__ == '__main__':
         cond_scale = 3.                # condition scaling, anything greater than 1 strengthens the classifier free guidance. reportedly 3-8 is good empirically
     )
 
-    print(sampled_images.shape) # (8, 3, 128)
+    print(sampled_signals.shape) # (8, 3, 128)

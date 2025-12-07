@@ -1,20 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-"""MITBIH.py
-
-PyTorch dataloaders for MITHIB dataset
-
-Author: Xiaomin Li, Texas State University
-Date: 1/26/2023
-
-
-TODOS:
-* 
-"""
-
-
-#necessory import libraries
 
 import os 
 import sys 
