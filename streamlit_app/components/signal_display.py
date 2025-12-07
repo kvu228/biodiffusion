@@ -65,17 +65,30 @@ def display_signal_single(signal, label=None, figsize=(10, 4)):
     Display a single 1D signal
     
     Args:
-        signal: Tensor of shape (channels, seq_length) or (seq_length,)
+        signal: Tensor of shape (batch, channels, seq_length), (channels, seq_length), or (seq_length,)
         label: Optional label
         figsize: Figure size
     """
     if isinstance(signal, torch.Tensor):
         signal = signal.cpu().detach().numpy()
     
+    # Handle 3D tensors (batch, channels, seq_length)
+    if signal.ndim == 3:
+        # If batch size is 1, squeeze it
+        if signal.shape[0] == 1:
+            signal = signal.squeeze(0)  # (1, channels, seq_length) -> (channels, seq_length)
+        else:
+            # Take first sample if batch > 1
+            signal = signal[0]  # (batch, channels, seq_length) -> (channels, seq_length)
+    
+    # Handle 1D tensors
     if signal.ndim == 1:
-        signal = signal.reshape(1, -1)
-    elif signal.ndim == 2 and signal.shape[0] > signal.shape[1]:
-        signal = signal.T
+        signal = signal.reshape(1, -1)  # (seq_length,) -> (1, seq_length)
+    # Handle 2D tensors - ensure (channels, seq_length) format
+    elif signal.ndim == 2:
+        if signal.shape[0] > signal.shape[1]:
+            # Likely (seq_length, channels), transpose to (channels, seq_length)
+            signal = signal.T
     
     channels, seq_length = signal.shape
     
