@@ -4,22 +4,23 @@ A versatile diffusion model framework for biomedical signal synthesis, specifica
 
 ## Overview
 
-BioDiffusion implements state-of-the-art diffusion models for generating biomedical signals, particularly focusing on ECG (Electrocardiogram) signals from the MIT-BIH Arrhythmia Database. The framework supports multiple generation modes:
+BioDiffusion implements state-of-the-art diffusion models for generating biomedical signals, particularly focusing on ECG (Electrocardiogram) signals from the MIT-BIH Arrhythmia Database and accelerometer signals from the UNIMIB SHAR Database. The framework supports multiple generation modes:
 
-- **Class-Conditional Generation**: Generate signals conditioned on class labels (5 classes: Non-Ectopic, Superventrical Ectopic, Ventricular Beats, Unknown, Fusion Beats)
+- **Class-Conditional Generation**: Generate signals conditioned on class labels (5 classes for MIT-BIH, 9 classes for UNIMIB)
 - **Signal Conditional Generation**: Generate signals conditioned on other signals (for denoising, imputation, super-resolution)
 - **Unconditional Generation**: Generate signals without any conditioning
 
 ## Features
 
-- 🧬 **Diffusion Models**: Implementation of DDPM with classifier-free guidance
-- 📊 **MIT-BIH Dataset**: Support for MIT-BIH Arrhythmia Database with 5 classes
-- 🎯 **Class-Conditional Generation**: Generate signals for specific heartbeat classes
-- 🔧 **Signal Processing**: Support for denoising, imputation, and super-resolution tasks
-- 📈 **Streamlit Web App**: Interactive web interface for visualization and signal generation
-- 📉 **Model Evaluation**: Comprehensive testing with metrics (Wavelet Coherence, Discriminative Score, F1-Score)
+- 🧬 **Diffusion Models**: Implementation of DDPM with classifier-free guidance and self-conditioning
+- 📊 **Multiple Datasets**: Support for MIT-BIH Arrhythmia Database (ECG) and UNIMIB SHAR Database (accelerometer)
+- 🎯 **Class-Conditional Generation**: Generate signals for specific classes with classifier-free guidance
+- 🔧 **Signal Processing**: Support for denoising, imputation, super-resolution, and individual signal generation
+- 📈 **Streamlit Web App**: Interactive web interface with 3 pages (Dataset, Signal Generation, Signal Conditional)
+- 📉 **Model Evaluation**: Comprehensive testing with metrics (Wavelet Coherence, Discriminative Score, F1-Score, MSE, MAE)
 - 💾 **Checkpoint Management**: Automatic checkpoint saving and resuming with early stopping
 - 📝 **TensorBoard Logging**: Training progress visualization
+- 📓 **Evaluation Notebooks**: Jupyter notebooks for detailed model evaluation and analysis
 
 ## Project Structure
 
@@ -33,13 +34,17 @@ biodiffusion/
 │   ├── MITBIH.py                     # MIT-BIH dataset loaders
 │   ├── load_dataset.py               # Dataset download utilities
 │   ├── test_model.py                 # Model testing and evaluation
+│   ├── evaluate_DDPM1D_cls_free_MITBIH.ipynb  # Evaluation notebook for class-conditional model
+│   ├── evaluate_DDPM1D_SelfConditional_maskedCond.ipynb  # Evaluation notebook for signal-conditional model
 │   ├── utils.py                      # Utility functions
 │   ├── utils_cond.py                 # Conditional model utilities
+│   ├── UNIMIB.py                      # UNIMIB dataset loaders
 │   ├── modules/
 │   │   ├── modules1D_cls_free.py     # Classifier-free guidance modules
 │   │   └── modules1D_cond.py         # Conditional diffusion modules
 │   ├── datasets/
-│   │   └── heartbeat/                # MIT-BIH dataset files
+│   │   ├── heartbeat/                # MIT-BIH dataset files
+│   │   └── unimib/                    # UNIMIB SHAR dataset files
 │   ├── checkpoint/                   # Model checkpoints
 │   ├── results/                      # Generated samples
 │   ├── logs/                         # Training logs
@@ -48,7 +53,8 @@ biodiffusion/
 │   ├── app.py                        # Main Streamlit app
 │   ├── pages/
 │   │   ├── 0_Dataset.py             # Dataset visualization page
-│   │   └── 1_Signal_Generation.py    # Signal generation page
+│   │   ├── 1_Signal_Generation.py    # Class-conditional signal generation page
+│   │   └── 2_Signal_Conditional.py   # Signal-conditional tasks page (denoising, imputation, super-resolution)
 │   └── components/
 │       └── signal_display.py         # Signal visualization components
 ├── docs/
@@ -82,17 +88,23 @@ uv sync
 pip install -e .
 ```
 
-3. Download the MIT-BIH dataset:
+3. Download the datasets:
 ```bash
 # Set up Kaggle API credentials
 export KAGGLE_USERNAME=your_username
 export KAGGLE_KEY=your_api_key
 
-# Or run the download script
+# Download all datasets (MIT-BIH and UNIMIB)
 python src/load_dataset.py
+
+# Or download specific dataset
+python src/load_dataset.py --dataset mitbih  # MIT-BIH only
+python src/load_dataset.py --dataset unimib  # UNIMIB only
 ```
 
-The dataset will be downloaded to `src/datasets/heartbeat/`.
+The datasets will be downloaded to:
+- MIT-BIH: `src/datasets/heartbeat/`
+- UNIMIB: `src/datasets/unimib/`
 
 ## Usage
 
@@ -159,10 +171,10 @@ Launch the interactive web interface:
 streamlit run streamlit_app/app.py
 ```
 
-The app provides:
-- **Dataset Visualization**: Explore the MIT-BIH dataset with statistics and sample signals
-- **Signal Generation**: Generate signals interactively with customizable parameters
-- **Model Management**: Load and switch between different trained models
+The app provides three main pages:
+- **Dataset Page**: Explore MIT-BIH and UNIMIB datasets with statistics and sample signals
+- **Signal Generation Page**: Generate class-conditional signals interactively with customizable parameters (CFG scale, class selection)
+- **Signal Conditional Page**: Perform signal restoration tasks (denoising, imputation, super-resolution) using signal-conditional models
 
 ## Model Architecture
 
@@ -184,7 +196,7 @@ The class-conditional model uses a 1D UNet architecture with:
 - **Loss**: L1 loss
 - **Sampling**: DDPM sampling with optional DDIM acceleration
 
-## Dataset
+## Datasets
 
 ### MIT-BIH Arrhythmia Database
 
@@ -202,6 +214,27 @@ The framework uses the MIT-BIH Arrhythmia Database with 5 classes:
 - Format: Normalized values
 - Training set: `mitbih_train.csv`
 - Test set: `mitbih_test.csv`
+
+### UNIMIB SHAR Database
+
+The framework also supports the UNIMIB SHAR (Smartphone-based HAR) Database with 9 activity classes:
+
+1. **StandingUpFS** (Class 0): Standing up from sitting
+2. **StandingUpFL** (Class 1): Standing up from lying
+3. **Walking** (Class 2): Walking activity
+4. **Running** (Class 3): Running activity
+5. **GoingUpS** (Class 4): Going upstairs
+6. **Jumping** (Class 5): Jumping activity
+7. **GoingDownS** (Class 6): Going downstairs
+8. **LyingDownFS** (Class 7): Lying down from sitting
+9. **SittingDown** (Class 8): Sitting down
+
+**Dataset Characteristics**:
+- Sequence length: 151 timesteps
+- Channels: 3 (accelerometer: x, y, z axes)
+- Format: Normalized values
+- Training set: `unimib_train.csv`
+- Test set: `unimib_test.csv`
 
 ## Training Configuration
 
@@ -241,9 +274,19 @@ Generated samples are saved to `src/results/<run_name>/` as image files showing:
 
 The framework provides comprehensive evaluation:
 
-1. **Wavelet Coherence Score**: Measures frequency-domain similarity
-2. **Discriminative Score**: Measures how realistic generated signals are (lower is better)
-3. **F1-Score**: Classification accuracy on generated signals
+### Class-Conditional Models:
+1. **Wavelet Coherence Score**: Measures frequency-domain similarity between real and generated signals
+2. **Discriminative Score**: Measures how distinguishable generated signals are from real ones (lower is better)
+3. **F1-Score**: Classification performance on generated signals
+
+### Signal-Conditional Models:
+1. **MSE (Mean Squared Error)**: Measures reconstruction accuracy
+2. **MAE (Mean Absolute Error)**: Measures average deviation between original and restored signals
+3. **Visual Comparison**: Side-by-side comparison of original, corrupted, and restored signals
+
+Evaluation notebooks are available in `src/`:
+- `evaluate_DDPM1D_cls_free_MITBIH.ipynb`: Comprehensive evaluation for class-conditional models
+- `evaluate_DDPM1D_SelfConditional_maskedCond.ipynb`: Evaluation for signal-conditional models across multiple tasks
 
 ## Dependencies
 
@@ -263,6 +306,10 @@ See `pyproject.toml` for the complete list.
 Detailed documentation is available in `docs/report/`:
 - `biodiffusion_models_theory.md`: Theoretical background and model architectures
 - `unet_architecture_detailed.md`: Detailed UNet architecture documentation
+- `heartbeat_dataset_description.md`: MIT-BIH dataset details and preprocessing
+- `training_hyperparameters.md`: Training configurations and hyperparameter details
+- `model_evaluation_analysis.md`: Evaluation methodology and metrics
+- `demo_description_guide.md`: Streamlit app usage guide
 
 ## Citation
 
@@ -299,6 +346,19 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 3. **Dataset not found**: Ensure dataset files are in `src/datasets/heartbeat/`
 4. **Model checkpoint not loading**: Check that model parameters match training configuration
 
+## Evaluation Notebooks
+
+The repository includes comprehensive evaluation notebooks:
+
+- **`evaluate_DDPM1D_cls_free_MITBIH.ipynb`**: Evaluates class-conditional models with metrics including Wavelet Coherence, Discriminative Score, and F1-Score
+- **`evaluate_DDPM1D_SelfConditional_maskedCond.ipynb`**: Evaluates signal-conditional models across four tasks:
+  - Signal Denoising
+  - Signal Imputation
+  - Signal Super-resolution
+  - Individual Signal Generation
+
+These notebooks provide detailed analysis, visualizations, and metric calculations for model performance assessment.
+
 ## Future Work
 
 - [ ] Support for additional biomedical signal types
@@ -306,4 +366,5 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - [ ] Improved evaluation metrics
 - [ ] Model compression and optimization
 - [ ] Real-time generation capabilities
+- [ ] Extended support for more datasets
 
