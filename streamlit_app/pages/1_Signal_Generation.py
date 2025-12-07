@@ -12,26 +12,38 @@ sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
 try:
-    from src.core.model_loader import ModelLoader
+    from src.model_loader import ModelLoader
     from streamlit_app.components.signal_display import display_signals
 except ImportError:
-    from core.model_loader import ModelLoader
+    from model_loader import ModelLoader
     from streamlit_app.components.signal_display import display_signals
 
 st.set_page_config(page_title="Signal Generation", page_icon="📈", layout="wide")
 
 st.title("📈 1D Signal Generation")
-st.markdown("Generate ECG/heartbeat signals using classifier-free guidance diffusion models")
+st.markdown("Generate biomedical signals using **Label Conditional** diffusion models with classifier-free guidance")
+st.caption("Based on BioDiffusion paper: Label conditional generation where each signal is paired with a class label")
 
 # Instructions/Help section
 with st.expander("📖 Hướng dẫn sử dụng", expanded=False):
     st.markdown("""
+    ### Loại Model:
+    
+    Đây là **Label Conditional Diffusion Model** (theo paper BioDiffusion):
+    - Mỗi signal được generate dựa trên một class label (scalar label)
+    - Sử dụng classifier-free guidance để điều khiển độ mạnh của conditioning
+    - Phù hợp cho việc generate signals theo từng class cụ thể
+    
     ### Cách sử dụng:
     
     1. **Chọn Model**: Chọn model đã được train từ danh sách trong sidebar
     2. **Cấu hình Model Parameters**:
-       - **Number of classes**: Số lượng classes mà model đã được train (ví dụ: 5 cho MIT-BIH dataset)
-       - **Sequence length**: Độ dài của signal (phải khớp với model đã train, thường là 128)
+       - **Number of classes**: Số lượng classes mà model đã được train 
+         - MIT-BIH: 5 classes (Non-Ectopic, Superventrical Ectopic, Ventricular, Unknown, Fusion)
+         - UNIMIB: 9 classes (StandingUpFS, StandingUpFL, Walking, Running, GoingUpS, Jumping, GoingDownS, LyingDownFS, SittingDown)
+       - **Sequence length**: Độ dài của signal (phải khớp với model đã train)
+         - MIT-BIH: 144 timesteps
+         - UNIMIB: 128 timesteps
        - **Model dimension**: Dimension của model (thường là 64)
     
     3. **Load Model**: Click nút "🔄 Reload Model" để load model vào memory
@@ -41,12 +53,12 @@ with st.expander("📖 Hướng dẫn sử dụng", expanded=False):
        - **CFG Scale**: Classifier-free guidance scale (0.0-10.0)
          - Giá trị cao hơn = signal gần với class hơn nhưng có thể kém đa dạng
          - Giá trị thấp hơn = signal đa dạng hơn nhưng có thể ít phù hợp với class
-         - Khuyến nghị: 3.0-5.0
+         - Khuyến nghị: 3.0-5.0 (theo paper BioDiffusion)
     
-    5. **Chọn Class**:
-       - **Single class**: Generate tất cả signals cùng một class
-       - **Multiple classes**: Generate signals với nhiều classes khác nhau
-       - **Random**: Generate signals với classes ngẫu nhiên
+    5. **Chọn Class Label**:
+       - **Single class**: Generate tất cả signals cùng một class label
+       - **Multiple classes**: Generate signals với nhiều class labels khác nhau
+       - **Random**: Generate signals với class labels ngẫu nhiên
     
     6. **Generate**: Click "Generate Signals" để tạo signals
     
@@ -66,7 +78,7 @@ device = st.sidebar.selectbox(
 )
 
 # Model loading - check signal checkpoint directory
-checkpoint_dir = project_root / "src" / "signal" / "checkpoint"
+checkpoint_dir = project_root / "src" /  "checkpoint"
 
 available_models = {}
 # Check signal checkpoint directory
