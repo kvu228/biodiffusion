@@ -47,6 +47,6 @@ datasets/
 *.pth
 *.zip
 
-doc/*
+docs/*
 
 .env
